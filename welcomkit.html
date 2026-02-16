@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WelcomeKit</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <style>
+        :root {
+            --footerTopSpace: 0px;
+            /* reduce extra top padding in footer */
+            --footerOrnamentMB: 3px;
+            /* tighter space below ornament */
+            --footerLogosToLinks: 11px;
+            /* tighter space between logos and links */
+            --footerWebsitesMB: 2px;
+            /* tighter space above office boxes */
+            --footerOfficePadTop: 8px;
+            /* reduced office box top padding */
+            --footerOfficePadBottom: 8px;
+            --footerOrnamentWidth: 500px;
+            /* control ornament width only */
+            /* reduced office box bottom padding */
+            /* Page 2 info-table per-field spacing */
+            --login-margin: 0 0 0 6px;
+            --login-padding: 0 6px;
+            --am-margin: 0 0 0 6px;
+            --am-padding: 0;
+            /* start right after colon */
+            --pass-margin: 0 0 0 6px;
+            --pass-padding: 0 6px;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            /* Two inset rings so both show in print/PDF: blue outside, orange inside */
+            border: none;
+            box-shadow:
+                inset 0 0 0 7px #0c4986,
+                /* OUTER blue band (closest to edge) */
+                inset 0 0 0 16px #FF6600;
+            /* inner orange band */
+            padding: 20mm 20mm 0 20mm;
+            background: url('back2.jpeg') no-repeat center center;
+            background-size: cover;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            /* ensure children don't render outside border */
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                margin: 0;
+                /* draw page to exact A4 area */
+                width: 210mm;
+                height: 297mm;
+                padding: 20mm 20mm 0 20mm;
+                box-shadow: none !important;
+                border: none !important;
+                box-sizing: border-box;
+                position: relative;
+                overflow: hidden;
+            }
+
+            /* Page 1 rings (Page 2 and Page 3 stay plain) */
+            .container:first-of-type::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                box-sizing: border-box;
+                border: 14px solid #1976D2;
+                /* blue ring */
+                pointer-events: none;
+            }
+
+            .container:first-of-type::after {
+                content: '';
+                position: absolute;
+                /* inset inside the blue ring */
+                top: 14px;
+                right: 14px;
+                bottom: 14px;
+                left: 14px;
+                box-sizing: border-box;
+                border: 12px solid #FF6600;
+                /* orange inner ring */
+                pointer-events: none;
+            }
+
+            @page {
+                size: A4;
+                margin: 0;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .main-logo {
+            height: 97px;
+            /* increased main logo height */
+            width: auto;
+            margin-top: -32px;
+            /* move slightly upward */
+            margin-bottom: 14px;
+
+        }
+
+        .sub-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 42px;
+            margin-bottom: 60px;
+            /* increased space before the photo container */
+        }
+
+        .sub-logos img {
+            height: 40px;
+        }
+
+        .candidate-section {
+            display: flex;
+            flex-direction: column;
+            gap: 33px;
+            margin: 0 auto 30px auto;
+            width: 100%;
+            align-items: center;
+        }
+
+        /* Candidate photo frame */
+        .candidate-photo {
+            width: 181px;
+            height: 220px;
+            border: 4px solid #1976D2;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .upload-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upload-btn {
+            background: #1976D2;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .upload-btn:hover {
+            opacity: 0.9;
+        }
+
+        .model-status {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        .candidate-info {
+            width: 97%;
+            max-width: 999px;
+            margin: 24px;
+            text-align: left;
+        }
+
+        .info-field {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            /* align text baselines */
+        }
+
+        .info-field label {
+            font-weight: bold;
+            color: navy;
+            font-size: 23px;
+            flex: 0 0 230px;
+            /* fixed label column for consistent alignment */
+            width: 230px;
+            display: contents;
+            text-align: left;
+            line-height: 1.1;
+            /* match input line-height */
+        }
+
+        .info-field input {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: inline-block;
+            padding: 0;
+            /* avoid extra vertical shift in PDF */
+            margin: 0;
+            height: auto;
+            font-size: 23px !important;
+            /* match label size for clean baseline */
+            line-height: 1.1;
+            /* match label line-height */
+        }
+
+        /* Footer Section Styles */
+        .footer-section {
+            position: absolute;
+            bottom: 14px;
+            left: 16px;
+            /* anchor to inner left border */
+            right: auto;
+            /* avoid shrink-to-fit */
+            width: 762px;
+            /* span full inner width */
+            padding-top: var(--footerTopSpace);
+            /* adjustable height: increase/decrease this */
+        }
+
+
+        .footer-websites {
+            text-align: center;
+            margin-bottom: var(--footerWebsitesMB);
+            /* tighter spacing above footer boxes */
+        }
+
+        .website-link {
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 35px;
+            margin: 33px;
+            /* tighter */
+
+            display: block;
+        }
+
+        /* Footer logos and ornament (place logos for the 2 sites and optional divider) */
+        .footer-ornament {
+            text-align: center;
+            margin-bottom: var(--footerOrnamentMB);
+
+        }
+
+        .footer-ornament img {
+            width: var(--footerOrnamentWidth);
+            /* increased width */
+            height: auto;
+            /* maintain aspect ratio */
+            object-fit: contain;
+            opacity: 0.95;
+            margin-bottom: 6px;
+        }
+
+        .footer-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 150px;
+            /* more gap between the two logos */
+            /* extra gap between the two logos */
+            /* increased spacing between the two footer logos */
+            margin-bottom: var(--footerLogosToLinks);
+            /* more space between logos and links */
+            /* space before the text links */
+        }
+
+        .footer-logos img {
+            height: 70px;
+            /* increased logo height */
+            /* adjust as needed */
+            object-fit: contain;
+        }
+
+        .footer-container {
+            display: flex;
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            padding: 0;
+            box-sizing: border-box;
+            direction: rtl;
+            /* start from right */
+            gap: 0;
+        }
+
+        .footer-container1 {
+            display: flex;
+            width: 87%;
+            margin-left: 43px;
+            margin-right: 0;
+            padding: 0;
+            box-sizing: border-box;
+            direction: rtl;
+            /* start from right */
+            gap: 0;
+        }
+
+        .office-box {
+            flex: 1;
+            padding: var(--footerOfficePadTop) 18px var(--footerOfficePadBottom) 20px;
+            /* reduce overall padding to shrink height */
+            color: white;
+            font-size: 13px;
+            line-height: 1.45;
+            /* slightly tighter lines */
+            position: relative;
+            direction: ltr;
+            /* content left-to-right */
+        }
+
+        /* Footer row is RTL, so the leftmost box is the last child */
+        .footer-container .office-box:last-child {
+            padding-left: 28px;
+            /* nudge a bit more so it clears the border */
+        }
+
+        .footer-container .office-box:last-child .office-details,
+        .footer-container .office-box:last-child .office-header {
+            padding-left: 6px;
+            /* micro-adjust inner content */
+        }
+
+        .vadodara-office {
+            background-color: #2B2B6B;
+        }
+
+        .amdavad-office {
+            background-color: #d61977;
+        }
+
+        .maninagar-office {
+            background-color: #ca8133;
+        }
+
+        .office-header {
+            font-weight: bold;
+            font-size: 17px;
+            /* a bit smaller */
+            margin-bottom: 4px;
+            /* tighter */
+            /* tighter */
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .office-header hr {
+            border: none;
+            border-top: 2px solid white;
+            margin: 3px 0 6px 0;
+            /* tighter */
+            /* reduce whitespace around rule */
+            width: 100%;
+        }
+
+        .office-details {
+            font-size: 13px;
+            text-align: left;
+            line-height: 1.45;
+            /* slightly tighter */
+        }
+
+        /* Top-right actions bar */
+        .top-actions {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+        }
+
+        .download-btn,
+        .upload-btn-top {
+            background: #FF6600;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .zoom-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 6px;
+        }
+
+        .zoom-wrap label {
+            font-size: 12px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .zoom-wrap input[type="range"] {
+            width: 120px;
+        }
+
+        .top-actions .download-btn {
+            position: static;
+        }
+
+        .download-btn:hover,
+        .upload-btn-top:hover {
+            opacity: 0.9;
+        }
+
+        @media print {
+            .top-actions {
+                display: none !important;
+            }
+        }
+
+        /* Multi-page helpers and Page 2 styles */
+        .page-break {
+            page-break-before: always;
+        }
+
+        @media print {
+            .page-break {
+                break-before: page;
+            }
+        }
+
+        .p2-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .p2-panel {
+            background: rgba(0, 0, 0, 0.82);
+            border: 2px solid #cfcfcf;
+            color: #ffffff;
+            padding: 10px 12px;
+        }
+
+        .p2-title {
+            text-align: center;
+            font-weight: bold;
+
+            margin: 6px 0;
+        }
+
+        .p2-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ffffff;
+        }
+
+        .p2-table th,
+        .p2-table td {
+            border: 2px solid #cfcfcf;
+            padding: 6px 10px;
+        }
+
+        .p2-table th {
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .p2-table .key {
+            width: 40%;
+        }
+
+        .p2-table .val {
+            width: 60%;
+        }
+
+        .p2-link {
+            color: #00b3ff;
+            font-weight: bold;
+
+        }
+
+        .p2-note {
+            color: #ffffff;
+        }
+
+        .p2-note ul {
+            margin: 6px 0 0 18px;
+        }
+
+        /* Keep Login ID / Account Manager / Password on one line and evenly spaced */
+        .info-table td {
+            white-space: nowrap;
+            display: grid;
+            grid-template-columns: 220px auto;
+            /* fixed label column, flexible value column */
+            align-items: center;
+            justify-items: start;
+            /* ensure values start at column start */
+            width: 100%;
+            column-gap: 6px;
+            /* consistent gap after colon */
+        }
+
+        .info-table strong {
+            justify-self: end;
+            /* right-align label so colon lines up */
+            margin-right: 0;
+        }
+
+        /* Per-row grid overrides: control label width and gap separately per row */
+        .info-table .row-login>td {
+            grid-template-columns: 232px auto;
+            column-gap: 6px;
+        }
+
+        .info-table .row-account-manager>td {
+            grid-template-columns: 322px auto;
+            column-gap: 6px;
+        }
+
+        .info-table .row-password>td {
+            grid-template-columns: 241px auto;
+            column-gap: 6px;
+        }
+
+        /* Remove left padding in value inputs so text starts right after the colon */
+        .info-table .p2-inline-input {
+            padding-left: 0 !important;
+        }
+
+        /* Separate styles for Login, Account Manager, and Password */
+        .info-table .row-login .login-id-input {
+
+            font-weight: 700;
+            margin: var(--login-margin);
+            padding: var(--login-padding);
+        }
+
+        .info-table .row-account-manager .account-manager-input {
+            color: #000 !important;
+            font-weight: 600;
+            padding: var(--am-padding);
+        }
+
+        .info-table .row-account-manager .account-manager-hl {
+            background: #ffeb3b !important;
+        }
+
+        .info-table .row-account-manager .account-manager-wrap {
+            margin: var(--am-margin);
+        }
+
+        .info-table .row-password .password-input {
+            color: #000;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: var(--pass-margin);
+            padding: var(--pass-padding);
+        }
+
+        /* Screen-only paging: show one container at a time, but render all for PDF */
+        @media screen {
+            .container {
+                display: none;
+            }
+
+            .container.active {
+                display: block;
+            }
+        }
+
+        body.render-all .container {
+            display: block !important;
+        }
+
+        @media print {
+            .hide-on-pdf {
+                display: none !important;
+            }
+        }
+
+        /* Make Page 2 plain (no background image or decorative rings) */
+        #page2 {
+            background: #fff !important;
+            box-shadow: none !important;
+        }
+
+        @media print {
+            #page2 {
+                background: #fff !important;
+                box-shadow: none !important;
+            }
+        }
+
+        /* Page 3 (Policies & Services) */
+        #page3 {
+            background: #fff !important;
+            box-shadow: none !important;
+        }
+
+        #page3 .page3-title {
+            text-align: left;
+            margin: 4px 0 10px;
+            line-height: 1.1;
+        }
+
+        #page3 .page3-title .brand {
+            color: #ff7a00;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        #page3 .page3-sublogos {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            margin: -7px 98px 5px;
+
+        }
+
+        /* Make the three small logos on Page 3 a bit bigger */
+        #page3 .page3-sublogos img {
+            height: 40px;
+        }
+
+        #page3 .page3-section-title {
+            font-weight: 750;
+            text-align: center;
+            margin: 6px 0 14px;
+            font-size: initial;
+        }
+
+        #page3 .page3-center-title {
+            font-weight: 750;
+            text-align: center;
+            margin: 6px 0 14px;
+            font-size: initial;
+
+        }
+
+        #page3 .two-col {
+            column-count: 2;
+            column-gap: 26px;
+        }
+
+        #page3 .two-col p,
+        #page3 .two-col li {
+            break-inside: avoid;
+        }
+
+        #page3 .num-item {
+            margin: 0 0 18px;
+        }
+
+        #page3 .num-item strong {
+            font-weight: 700;
+        }
+
+        #page3 .tc-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        #page3 .tc-list li {
+            margin: 0 0 10px;
+        }
+
+        #page3 .tc-num {
+            font-weight: 700;
+        }
+
+        #page3 .blue-cards {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        #page3 .blue-card {
+            background: #1976D2;
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        #page3 .blue-card .city {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-actions" data-html2canvas-ignore="true">
+        <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+        <link rel="shortcut icon" type="image/png" href="favicon.png">
+        <link rel="icon" href="favicon.png" type="image/png">
+
+        <link rel="apple-touch-icon" href="favicon.png">
+        <button id="downloadPdfBtn" class="download-btn">Download PDF</button>
+        <button id="prevPageBtn" class="download-btn" type="button">Prev Page</button>
+        <button id="nextPageBtn" class="download-btn" type="button">Next Page</button>
+        <button id="uploadPhotoButtonTop" class="upload-btn-top" type="button">Upload Photo</button>
+        <div class="zoom-wrap">
+            <label for="zoomSlider">Zoom</label>
+            <input id="zoomSlider" type="range" min="0.8" max="2" step="0.05" value="1">
+        </div>
+        <button id="pastePhotoButton" class="upload-btn-top" type="button">Paste Photo</button>
+        <button id="copyPhotoButton" class="upload-btn-top" type="button">Copy Photo</button>
+    </div>
+
+
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <img id="mainLogo" class="main-logo" src="img1.png"
+                alt="Main Header Logo"><!-- Set main header logo URL here -->
+            <!-- <div class="sub-logos">
+                <img id="subLogoLeft" src="img2.png" alt="Left Logo">
+                <img id="subLogoCenter" src="img3.png" alt="Center Logo">
+                <img id="subLogoRight1" src="img4.png" alt="Right Logo 1">
+                <img id="subLogoRight2" src="img5.png" alt="Right Logo 2">
+            </div> -->
+        </div>
+
+        <div class="candidate-section">
+            <div class="candidate-photo" id="candidatePhotoBox">
+                <img id="candidatePhotoPreview" alt="Candidate Photo Preview" style="display:none;" />
+                <div class="model-status" id="modelStatus">Loading…</div>
+            </div>
+            <div class="upload-controls" style="display:none;">
+                <input id="photoUploadInput" type="file" accept="image/*" />
+                <button class="upload-btn" id="uploadPhotoButton" type="button">Upload Photo</button>
+            </div>
+            <div class="candidate-info">
+                <div class="info-field">
+                    <label style="font-size:28px;">Name of Candidate :</label>
+                    <input type="text" placeholder="Enter candidate name"
+                        style="font-weight:bold;flex:1;border:none;background:transparent;font-size:28px;color:#ff1f8f;outline:none;">
+                </div>
+                <div class="info-field">
+                    <label style="font-size:28px;">Date Of Birth :</label>
+                    <input type="text" placeholder="Enter date of birth"
+                        style="font-weight:bold;flex:1;border:none;background:transparent;font-size:28px;color:#ff1f8f;outline:none;">
+                </div>
+                <div class="info-field">
+                    <label style="font-size:28px;">Membership ID :</label>
+                    <input type="text" placeholder="Enter membership ID"
+                        style="font-weight:bold;flex:1;border:none;background:transparent;font-size:28px;color:#ff1f8f;outline:none;">
+                </div>
+                <div class="info-field">
+                    <label style="font-size:28px;">Website Name :</label>
+                    <input type="text" value="mangalfera.in" placeholder="Enter website name"
+                        style="font-weight:bold;flex:1;border:none;background:transparent;font-size:28px;color:#ff1f8f;outline:none;">
+                </div>
+                <div class="info-field">
+                    <label style="font-size:28px;">Mobile Number :</label>
+                    <input type="tel" placeholder="Enter mobile number"
+                        style="font-weight:bold;flex:1;border:none;background:transparent;font-size:28px;color:#ff1f8f;outline:none;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <!-- Optional decorative divider above the site logos -->
+            <div class="footer-ornament">
+                <img id="footerOrnament" src="generated-image (3).png"
+                    alt="Divider Ornament"><!-- Set ornament image URL (optional) -->
+            </div>
+
+            <!-- Two site logos above the links: set their image URLs here -->
+            <!-- <div class="footer-logos">
+                <img id="footerLogoBhudevNetwork" src="img2.png" alt="Bhudev Network Logo">
+                <img id="footerLogoVivah" src="img3.png" alt="Bhudev Network Vivah Logo">
+            </div> -->
+
+            <div class="footer-websites">
+                <div class="website-link">www.mangalfera.in</div>
+                
+            </div>
+
+            <div class="footer-container">
+
+
+                <div class="office-box maninagar-office">
+                    <div class="office-header">
+                        MANINAGAR
+                        <hr>
+                    </div>
+                    <div class="office-details">
+                        S/9, Shukun Plaza, Second Floor, <br> OOpp. Nagar Farsan, Near Pruthvi Hotels, Maninagar,
+                        Amdavad 380008 9099798986, 9081522111.</div>
+                </div>
+                <div class="office-box amdavad-office">
+                    <div class="office-header">
+                        AMDAVAD
+                        <hr>
+                    </div>
+                    <div class="office-details">
+                        A-703, 7th Floor,Nar -Naryan Complex,Near<br>
+                        Swastik Char Rasta, Opp Navrangpura Post office, Navrangpura Amdavad - 380009 <br>
+                        9099798986, 9081522111
+                    </div>
+                </div>
+                <div class="office-box vadodara-office">
+                    <div class="office-header">
+                        VADODARA
+                        <hr>
+                    </div>
+                    <div class="office-details">
+                        601, 602, 603, 604 A, 6th Floor<br> 6th Floor Galav Chambers, Dairy Den Circle, Sayajiganj
+                        Vadodara - 390020 <br>
+                        9099798986, 9081522111
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Page 2 (embedded) -->
+    <div class="container" id="page2">
+        <div class="header">
+            <img src="img1.png" alt="Bhudev Network Logo" class="main-logo" style="height: 88px;margin: top -45px;   ">
+            <!-- <div class="sub-logos" style="margin-bottom:20px;gap:60px;">
+                <img src="img2.png" alt="Vivah Logo">
+                <img src="img3.png" alt="NRI Vivah Logo">
+                <img src="img4.png" alt="Bhudev Network Logo">
+            </div> -->
+        </div>
+
+
+        <div style="padding-top:23px;">
+            <p>Welcome to Bhudev Network Family,</p>
+            <p>Thank You for Choosing Bhudev Network for Searching your Life partner.</p>
+        </div>
+
+        <div class="hide-on-pdf" style="text-align: right; margin-bottom: 10px;">
+            <button id="addRowBtn"
+                style="background: #1976D2; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">Add
+                Row</button>
+            <button id="deleteRowBtn"
+                style="background: #d61977; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">Delete
+                Row</button>
+        </div>
+
+        <table class="content-table" id="mainTable"
+            style="width:100%; border-collapse: collapse; margin-bottom: -19px;">
+            <thead>
+                <tr>
+                    <th colspan="2" style="text-align:center; border:1px solid #000; padding:4px; font-size:21px;">
+                        <span style="display:inline-flex; align-items:baseline; gap:8px;">
+                            <label>Candidate Name :</label>
+                            <input type="text" placeholder="Enter candidate name"
+                                style="font-weight:bold;flex:1;border:none;background:transparent;font-size:20px;color:#000000;outline:none;">
+                        </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align:center; border:1px solid #000; padding:2px 8px;">
+                        <span style="font-size:20px;">Member ID:</span><br>
+                        <input id="p2MembershipId" type="text" placeholder="Enter membership ID"
+                            style="border:0; padding:2px; width:96%; text-align:center; font-size:23px; line-height:1.05; margin:0;">
+                    </td>
+                    <td style="text-align:center; border:1px solid #000; padding:2px 8px;">
+                        <span style="font-size:20px;">Website:</span><br>
+                        <span id="p2WebsiteWrap" class="hl-wrap"
+                            style="position:relative; display:inline-block; vertical-align:baseline;">
+                            <span id="p2WebsiteHL" class="hl-bg" aria-hidden="true"
+                                style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); background:#ffeb3b; padding:0 2px; white-space:pre; pointer-events:none; display:none; line-height:inherit; color:transparent;"></span>
+                            <input id="p2Website" class="p2-inline-input highlight hl-input" type="text"
+                                value="mangalfera.in" placeholder="Enter website name"
+                                style="border:0; padding:0 2px; width:1ch; font-size:23px; line-height:1.05; background:transparent; position:relative; z-index:1; text-align:center; outline:none; margin:0;">
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+
+        <table class="info-table" style="width:625px; border-collapse:collapse;">
+            <tr class="row-login">
+                <td style="text-align:center; border:1px solid #000; padding:4px 8px 6px; font-size:20px;">
+                    <strong>Login ID :</strong>
+                    <input id="p2LoginId" class="p2-inline-input link-like login-id-input" type="text"
+                        placeholder="email@example.com" style="border:0; padding:0 6px; width:350px; font-size:20px; ">
+                </td>
+            </tr>
+            <tr class="row-account-manager">
+                <td style="text-align:center; border:1px solid #000; padding:4px 8px 6px; font-size:20px;">
+                    <strong>Account Manager :</strong>
+                    <span id="p2AccountManagerWrap" class="hl-wrap account-manager-wrap"
+                        style="position:relative; display:inline-block; vertical-align:baseline;">
+                        <span id="p2AccountManagerHL" class="hl-bg account-manager-hl" aria-hidden="true"
+                            style="position:absolute; left:0; top:50%; transform:translateY(-50%); background:#ffeb3b; padding:0 2px; white-space:pre; pointer-events:none; display:none; line-height:inherit; color:transparent;"></span>
+                        <input id="p2AccountManager"
+                            class="p2-inline-input highlight hl-input hl-fixed account-manager-input" type="text"
+                            placeholder="Name"
+                            style="border:0; padding:0; width:220px; font-size:20px; line-height:1.2; background:transparent; position:relative; z-index:1; outline:none;">
+                    </span>
+                </td>
+            </tr>
+            <tr class="row-password">
+                <td style="text-align:center; border:1px solid #000; padding:4px 8px 6px; font-size:20px;">
+                    <strong>Password :</strong>
+                    <input id="p2Password" class="p2-inline-input password-input" type="text" value="123456789" readonly
+                        aria-readonly="true" style="border:0; padding:0 6px; width:auto; font-size:20px;">
+                </td>
+            </tr>
+        </table>
+        <div style="padding-top:23px;">
+            <ul>
+                <li>Please Read Backside For Policies, Terms and Conditions and Scope of Services Covered under
+                    Your Membership</li>
+            </ul>
+        </div>
+
+        <div class="footer-section" style="position:absolute; left:8px; right:8px; bottom:8px;">
+            <div class="footer-note">
+            </div>
+            <div class="footer-container1" style="display:flex; gap:12px;">
+                <div class="office-box amdavad-office" style="flex:1; background: #1976D2;">
+                    <div class="office-header">AMDAVAD
+                        <hr>
+                    </div>
+                    <div class="office-details">A-703, 7th Floor, Nar-Naryana Complex, Opp Jalaram Chhaswala, Nr.
+                        Navrangpura Post office, Amdavad-380009</div>
+                </div>
+                <div class="office-box vadodara-office" style="flex:1; background: #1976D2;">
+                    <div class="office-header">VADODARA
+                        <hr>
+                    </div>
+                    <div class="office-details">603, Galav Chambers, Dairy Den Circle, Sayajigunj Vadodara-390020
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+
+
+
+    <!-- Page 3: Services + Policies (replica) -->
+    <div class="container" id="page3">
+        <div class="header">
+            <img src="img1.png" alt="Bhudev Network Logo" class="main-logo" style="height:60px;margin: top -50px;;">
+            <div class="page3-title">
+            </div>
+            <!-- <div class="page3-sublogos">
+                <img src="img2.png" alt="BHUDEV Network Vivah">
+                <img src="img3.png" alt="BHUDEV Network NRI Vivah">
+                <img src="img4.png" alt="BHUDEV Network .com">
+            </div> -->
+        </div>
+
+        <div>
+            <h3 class="page3-section-title">Services under Website Membership:</h3>
+            <div class="two-col" style="font-size:14px;">
+                <p class="num-item"><strong>(1) Unlimited Biodata in Website:</strong> You get Unlimited Biodata, till
+                    your Vivah, in Website, as per Membership taken.</p>
+                <p class="num-item"><strong>(2) Login ID &amp; Password:</strong> You get Membership ID, Login ID and
+                    Password for accessing your Profile in our Website as per Membership availed by you.</p>
+                <p class="num-item"><strong>(3) Free PDF of Bhudev Parichay Mela:</strong> You get free PDF of latest
+                    and all future Bhudev Pasandgi Mela, as applicable, under your Membership.</p>
+                <p class="num-item"><strong></strong> Till your Vivah. You will
+                    get these PDF from our PDF official WhatsApp number 9104348986.</p>
+                <p class="num-item"><strong>(4) Premium WhatsApp Group Membership:</strong> Your WhatsApp Numbers will
+                    be added to our Premium WhatsApp Groups as applicable under your Membership Plan.</p>
+                <p class="num-item"><strong>(5) Welcome-Kit:</strong> We will send you Welcome Kit by courier. This
+                    Welcome kit will have (1 File having Invoice, Printed Login Details, T&amp;C etc. + 1 mini Pocket
+                    Diary + 1 Pen)</p>
+            </div>
+        </div>
+
+        <h3 class="page3-center-title">Policies, Terms &amp; Conditions:</h3>
+        <div class="two-col" style="font-size:14px;">
+            <ul class="tc-list">
+                <li><span class="tc-num">(1)</span> Membership Plan Validity is only till your Vivah. We request you to
+                    inform us to disable your account after Candidate's vivah is done.</li>
+                <li><span class="tc-num">(2)</span> You agree to disclose and share all required information of
+                    candidate and others, as asked by our Team member during Registration and from time to time as
+                    required for us to provide you smooth and effective services.</li>
+                <li><span class="tc-num">(3)</span> You agree to provide KYC verification Documents of candidate and/or
+                    parents, like ID Proof, Photos, Biodata, or other necessary documents as asked or required by our
+                    Team members for our official records, formalities and good services. All the Documents you provide
+                    should be authentic, true and genuine.</li>
+                <li><span class="tc-num">(4)</span> The Membership Registration Fees for Website is Non-Refundable under
+                    any circumstances.</li>
+                <li><span class="tc-num">(5)</span> This Membership and its Services are Non-transferable to any other
+                    Person or Candidate.</li>
+                <li><span class="tc-num">(6)</span> If you have any Complaint or Suggestions, you can contact on
+                    7990209896 / 9081522111 / 9099798986.</li>
+                <li><span class="tc-num">(7)</span> Any New Services, if added in future, under this Membership Plan,
+                    might be Free or might be Chargeable as per the Design. And it will be informed to you.</li>
+                <li><span class="tc-num">(8)</span> After your Candidate's Vivah or Marriage happens, it will be your
+                    Responsibility to inform our Team to Disable / Delete your Membership Profile account from our
+                    Website.</li>
+                <li><span class="tc-num">(9)</span> For faster &amp; better Results regarding suitable Profile search,
+                    request you to kindly follow our guidelines, attend all our Bhudev Pasandgi Mela till Vivah and as
+                    required consult your Profile Account Manager from our Team time to time.</li>
+                <li><span class="tc-num">(10)</span> You agree to our Privacy Policy and Terms and Conditions mentioned
+                    in our Website.</li>
+                <li><span class="tc-num">(11)</span> If any kind of Dispute arises regarding any matter between your
+                    good self and our organization or our any past or present staff or Team member, then arbitration
+                    and/or jurisdiction will be carried out in accordance with and subject to the T&amp;C and Policies
+                    of our Organization Core Committee member's decision.</li>
+                <li><span class="tc-num">(12)</span> These T&amp;C are changeable and alterable in future at any time,
+                    as required, by our Organization Management.</li>
+            </ul>
+        </div>
+
+        <div class="footer-section" style="position:absolute; left:8px; right:8px; bottom:8px;">
+            <div class="footer-note">
+            </div>
+            <div class="footer-container1" style="display:flex; gap:12px;">
+                <div class="office-box amdavad-office" style="flex:1; background: #1976D2;">
+                    <div class="office-header">AMDAVAD
+                        <hr>
+                    </div>
+                    <div class="office-details">A-703, 7th Floor, Nar-Naryana Complex, Opp Jalaram Chhaswala, Nr.
+                        Navrangpura Post office, Amdavad-380009</div>
+                </div>
+                <div class="office-box vadodara-office" style="flex:1; background: #1976D2;">
+                    <div class="office-header">VADODARA
+                        <hr>
+                    </div>
+                    <div class="office-details">603, Galav Chambers, Dairy Den Circle, Sayajigunj Vadodara-390020
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+    <!-- Face detection + auto-crop scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+        // Configure where models are located. Use the same folder as before.
+        // Place TinyFaceDetector model files inside ./models (relative to this HTML).
+        const MODELS_URI = './models';
+
+        const photoInput = document.getElementById('photoUploadInput');
+        const uploadBtn = document.getElementById('uploadPhotoButton');
+        const uploadBtnTop = document.getElementById('uploadPhotoButtonTop');
+        const previewImg = document.getElementById('candidatePhotoPreview');
+        const modelStatus = document.getElementById('modelStatus');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const pastePhotoButton = document.getElementById('pastePhotoButton');
+        const copyPhotoButton = document.getElementById('copyPhotoButton');
+
+        const TARGET_W = 170; // px (matches CSS)
+        const TARGET_H = 220; // px (matches CSS)
+        const TARGET_ASPECT = TARGET_W / TARGET_H;
+
+        let modelsLoaded = false;
+
+        async function ensureModels() {
+            if (modelsLoaded) return;
+            try {
+                modelStatus.textContent = 'Loading models…';
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URI);
+                modelsLoaded = true;
+                modelStatus.textContent = 'Ready';
+                setTimeout(() => (modelStatus.style.display = 'none'), 1200);
+            } catch (e) {
+                // If models fail to load, allow upload with center-crop fallback
+                console.warn('Face API models failed to load from', MODELS_URI, e);
+                modelStatus.textContent = 'Face detect unavailable';
+                modelStatus.style.background = 'rgba(128,0,0,0.6)';
+                setTimeout(() => (modelStatus.style.display = 'none'), 2000);
+            }
+        }
+
+        function largestDetection(detections) {
+            if (!detections || detections.length === 0) return null;
+            return detections
+                .slice()
+                .sort((a, b) => (b.box.width * b.box.height) - (a.box.width * a.box.height))[0];
+        }
+
+        function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+        let zoomFactor = 1.0;
+        let lastImage = null;
+        let lastFaceBox = null;
+
+        function computeCropRect(imgW, imgH, faceBox, zoom = 1.0) {
+            // Add padding around the face, then enforce target aspect ratio, and keep inside image bounds.
+            const pad = 0.35; // 35% padding around face box
+            let cx, cy, w, h;
+
+            if (faceBox) {
+                const fx = faceBox.x;
+                const fy = faceBox.y;
+                const fw = faceBox.width;
+                const fh = faceBox.height;
+
+                cx = fx + fw / 2;
+                cy = fy + fh / 2;
+                w = fw * (1 + pad * 2);
+                h = fh * (1 + pad * 2);
+            } else {
+                // Fallback: center region
+                cx = imgW / 2;
+                cy = imgH / 3; // bias a bit upward like a portrait
+                w = imgW * 0.6;
+                h = imgH * 0.6;
+            }
+
+            // Adjust to target aspect by expanding the smaller side
+            const currentAspect = w / h;
+            if (currentAspect > TARGET_ASPECT) {
+                // too wide -> increase height
+                h = w / TARGET_ASPECT;
+            } else {
+                // too tall -> increase width
+                w = h * TARGET_ASPECT;
+            }
+
+            // Apply zoom by reducing crop size (zoom > 1 => zoom in)
+            w = w / zoom;
+            h = h / zoom;
+
+            // Convert center-based to top-left and clamp inside image
+            let x = cx - w / 2;
+            let y = cy - h / 2;
+            x = clamp(x, 0, imgW - w);
+            y = clamp(y, 0, imgH - h);
+
+            // If crop runs outside due to rounding, adjust again
+            if (x + w > imgW) x = imgW - w;
+            if (y + h > imgH) y = imgH - h;
+
+            return { x: Math.max(0, x), y: Math.max(0, y), w: Math.min(w, imgW), h: Math.min(h, imgH) };
+        }
+
+        function renderCrop(img, faceBox) {
+            const crop = computeCropRect(img.width, img.height, faceBox, zoomFactor);
+            const canvas = document.createElement('canvas');
+            canvas.width = TARGET_W;
+            canvas.height = TARGET_H;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(
+                img,
+                crop.x, crop.y, crop.w, crop.h,
+                0, 0, TARGET_W, TARGET_H
+            );
+            previewImg.src = canvas.toDataURL('image/jpeg', 0.92);
+            previewImg.style.display = 'block';
+        }
+
+        async function handleFile(file) {
+            if (!file) return;
+            await ensureModels();
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const img = new Image();
+                img.onload = async () => {
+                    let faceBox = null;
+                    if (modelsLoaded) {
+                        try {
+                            const detections = await faceapi.detectAllFaces(
+                                img,
+                                new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })
+                            );
+                            const best = largestDetection(detections);
+                            if (best) faceBox = best.box;
+                        } catch (err) {
+                            console.warn('Face detection error:', err);
+                        }
+                    }
+                    lastImage = img;
+                    lastFaceBox = faceBox;
+                    renderCrop(img, faceBox);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        uploadBtn?.addEventListener('click', () => photoInput?.click());
+        uploadBtnTop?.addEventListener('click', () => photoInput?.click());
+        photoInput?.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        // Zoom control
+        zoomSlider?.addEventListener('input', () => {
+            const val = parseFloat(zoomSlider.value);
+            zoomFactor = isFinite(val) ? val : 1.0;
+            if (lastImage) renderCrop(lastImage, lastFaceBox);
+        });
+
+        // Paste from clipboard: use paste event for broad support
+        window.addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items || [];
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) { handleFile(file); e.preventDefault(); return; }
+                }
+            }
+            const files = e.clipboardData?.files || [];
+            if (files.length) { handleFile(files[0]); e.preventDefault(); }
+        });
+
+        // Optional: attempt programmatic clipboard read (may require HTTPS)
+        pastePhotoButton?.addEventListener('click', async () => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.read) {
+                    const items = await navigator.clipboard.read();
+                    for (const ci of items) {
+                        for (const type of ci.types) {
+                            if (type.startsWith('image/')) {
+                                const blob = await ci.getType(type);
+                                const file = new File([blob], 'pasted-image', { type: blob.type });
+                                await handleFile(file);
+                                return;
+                            }
+                        }
+                    }
+                }
+                alert('Press Ctrl+V to paste an image here.');
+            } catch {
+                alert('Press Ctrl+V to paste an image here.');
+            }
+        });
+
+        // Copy cropped photo to clipboard
+        copyPhotoButton?.addEventListener('click', async () => {
+            try {
+                if (!previewImg?.src) return;
+                const res = await fetch(previewImg.src);
+                const blob = await res.blob();
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+                    copyPhotoButton.textContent = 'Copied!';
+                    setTimeout(() => (copyPhotoButton.textContent = 'Copy Photo'), 1200);
+                }
+            } catch (e) {
+                console.warn('Copy failed:', e);
+            }
+        });
+
+        // Warm up model load when page becomes idle
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => ensureModels());
+        } else {
+            setTimeout(() => ensureModels(), 500);
+        }
+    </script>
+
+    <!-- PDF export dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script>
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const containerEls = Array.from(document.querySelectorAll('.container'));
+        const uploadControls = document.querySelector('.upload-controls');
+        const modelBadge = document.getElementById('modelStatus');
+        const nextBtn = document.getElementById('nextPageBtn');
+        const prevBtn = document.getElementById('prevPageBtn');
+        const DEFAULT_P2_WEBSITE = 'mangalfera.in';
+
+        async function downloadPDF() {
+            // Temporarily hide non-document UI
+            const prevUploadDisplay = uploadControls ? uploadControls.style.display : null;
+            const prevBadgeDisplay = modelBadge ? modelBadge.style.display : null;
+            if (uploadControls) uploadControls.style.display = 'none';
+            if (modelBadge) modelBadge.style.display = 'none';
+
+            // Hide explicit UI controls inside pages
+            const hideEls = Array.from(document.querySelectorAll('.hide-on-pdf'));
+            const hidePrev = hideEls.map(el => el.style.display);
+            hideEls.forEach(el => el.style.display = 'none');
+
+            // Sync page 2 with current values
+            syncP2();
+
+            // Render each A4 container to its own canvas
+            document.body.classList.add('render-all');
+            const canvases = [];
+            for (const el of containerEls) {
+                const canvas = await html2canvas(el, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: null,
+                    onclone: (clonedDoc) => {
+                        // Replace inputs with styled spans so PDF matches screen intention
+                        const inputs = clonedDoc.querySelectorAll('.container input');
+                        inputs.forEach((inp) => {
+                            const span = clonedDoc.createElement('span');
+                            // Determine if this input lives inside an overlay highlight wrapper
+                            const inOverlay = !!(inp.closest('#p2AccountManagerWrap, #p2WebsiteWrap'));
+                            const hasValue = !!(inp.value && inp.value.trim() !== '');
+                            // For overlay fields, do NOT fall back to placeholder text in PDF
+                            const txt = hasValue
+                                ? inp.value
+                                : (inOverlay ? '' : (inp.getAttribute('placeholder') || ''));
+                            span.textContent = txt;
+                            // Base typography from inline styles
+                            const size = inp.style.fontSize || '20px';
+                            const weight = inp.style.fontWeight || 'normal';
+                            span.style.fontSize = size;
+                            span.style.fontWeight = weight;
+                            span.style.display = 'inline-block';
+                            span.style.lineHeight = '1.1';
+                            span.style.verticalAlign = 'baseline';
+                            span.style.whiteSpace = 'pre';
+                            // Ensure the text sits above any absolute-positioned highlight spans
+                            span.style.position = 'relative';
+                            span.style.zIndex = '1';
+                            // Copy padding so label/value alignment matches
+                            const cs = clonedDoc.defaultView.getComputedStyle(inp);
+                            span.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+                            // Special presentations
+                            if (inp.classList.contains('link-like')) {
+                                span.style.color = '#1976D2';
+                                span.style.textDecoration = '';
+                            } else if (inp.classList.contains('highlight') && !inOverlay) {
+                                // Only highlight when there is actual text
+                                if (txt.trim()) {
+                                    span.style.background = '#ffeb3b';
+                                    span.style.padding = '0 2px';
+                                    span.style.color = '#000';
+                                } else {
+                                    span.style.color = '#000';
+                                }
+                            } else {
+                                span.style.color = inp.style.color || '#000';
+                            }
+                            inp.replaceWith(span);
+                        });
+                        // For overlay highlight fields, mirror text into background span and avoid double highlight
+                        // Handle all overlay highlight wrappers generically
+                        clonedDoc.querySelectorAll('.hl-wrap').forEach(wrap => {
+                            const hl = wrap.querySelector('.hl-bg');
+                            if (!hl) return;
+                            // After input replacement, the only children should be HL and the span
+                            const textSpan = Array.from(wrap.childNodes).find(n => n.nodeType === 1 && !n.classList?.contains('hl-bg'));
+                            const content = textSpan && textSpan.textContent ? textSpan.textContent : '';
+                            if (content.trim()) {
+                                hl.style.display = 'inline';
+                                hl.textContent = content;
+                                if (textSpan && textSpan.style) {
+                                    textSpan.style.background = 'transparent';
+                                    textSpan.style.padding = '0';
+                                    // Keep text visible above the highlight
+                                    textSpan.style.position = 'relative';
+                                    textSpan.style.zIndex = '1';
+                                }
+                            } else {
+                                hl.style.display = 'none';
+                            }
+                        });
+                        clonedDoc.querySelectorAll('.hide-on-pdf, .top-actions').forEach(el => el.style.display = 'none');
+                    }
+                });
+                canvases.push(canvas);
+            }
+            document.body.classList.remove('render-all');
+
+            // Restore UI
+            if (uploadControls) uploadControls.style.display = prevUploadDisplay;
+            if (modelBadge) modelBadge.style.display = prevBadgeDisplay;
+            hideEls.forEach((el, i) => el.style.display = hidePrev[i]);
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = 210, pageH = 297;
+            canvases.forEach((cv, idx) => {
+                const imgData = cv.toDataURL('image/jpeg', 0.95);
+                if (idx > 0) pdf.addPage('a4', 'portrait');
+                pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH);
+            });
+            pdf.save('WelcomeKit.pdf');
+        }
+
+        downloadBtn?.addEventListener('click', () => downloadPDF());
+
+        // Live sync from page 1 inputs to page 2 fields
+        function normalizeURL(u) {
+            if (!u) return '';
+            return /^https?:\/\//i.test(u) ? u : `https://${u}`;
+        }
+        function syncP2() {
+            const name = document.querySelector('.info-field:nth-child(1) input')?.value || '';
+            const member = document.querySelector('.info-field:nth-child(3) input')?.value || '';
+            const website = document.querySelector('.info-field:nth-child(4) input')?.value || '';
+            const mobile = document.querySelector('.info-field:nth-child(5) input')?.value || '';
+            const p2NameInput = document.querySelector('#p2CandidateName');
+            if (p2NameInput && !(document.activeElement === p2NameInput && p2NameInput.value)) {
+                p2NameInput.value = name;
+            }
+            const p2MemberInput = document.querySelector('#p2MembershipId');
+            if (p2MemberInput && !(document.activeElement === p2MemberInput && p2MemberInput.value)) {
+                p2MemberInput.value = member;
+            }
+            const setText = (sel, val) => { const el = document.querySelector(sel); if (el) el.textContent = val || '—'; };
+            setText('#p2Mobile', mobile);
+            const p2WebsiteInput = document.querySelector('#p2Website');
+            if (p2WebsiteInput) {
+                const isFocused = document.activeElement === p2WebsiteInput;
+                if (!isFocused) {
+                    if (website && website.trim()) {
+                        // Page 1 has a value; mirror it
+                        p2WebsiteInput.value = website;
+                    } else if (!p2WebsiteInput.value || !p2WebsiteInput.value.trim()) {
+                        // Keep or set default only when empty
+                        p2WebsiteInput.value = DEFAULT_P2_WEBSITE;
+                    }
+                    if (typeof syncWebsiteHighlight === 'function') {
+                        setTimeout(() => syncWebsiteHighlight(), 0);
+                    }
+                }
+            }
+        }
+        document.querySelectorAll('.candidate-info input').forEach(i => i.addEventListener('input', syncP2));
+        // allow page 2 name input to update page 1 field if edited there
+        const p2NameInputEl = document.getElementById('p2CandidateName');
+        if (p2NameInputEl) {
+            p2NameInputEl.addEventListener('input', () => {
+                const p1Name = document.querySelector('.info-field:nth-child(1) input');
+                if (p1Name) p1Name.value = p2NameInputEl.value;
+            });
+        }
+        const p2MemberInputEl = document.getElementById('p2MembershipId');
+        if (p2MemberInputEl) {
+            p2MemberInputEl.addEventListener('input', () => {
+                const p1Member = document.querySelector('.info-field:nth-child(3) input');
+                if (p1Member) p1Member.value = p2MemberInputEl.value;
+            });
+        }
+        const p2WebsiteInputEl = document.getElementById('p2Website');
+        if (p2WebsiteInputEl) {
+            p2WebsiteInputEl.addEventListener('input', () => {
+                const p1Website = document.querySelector('.info-field:nth-child(4) input');
+                if (p1Website) p1Website.value = p2WebsiteInputEl.value;
+            });
+        }
+        // Highlight exactly what is typed for Website using a mirrored background span
+        const p2WebsiteEl = document.getElementById('p2Website');
+        const p2WebsiteHL = document.getElementById('p2WebsiteHL');
+        function syncWebsiteHighlight() {
+            if (!p2WebsiteEl || !p2WebsiteHL) return;
+            const txt = p2WebsiteEl.value || '';
+            // Match HL font metrics to input so widths line up exactly
+            const cs = getComputedStyle(p2WebsiteEl);
+            p2WebsiteHL.style.font = cs.font;
+            p2WebsiteHL.style.letterSpacing = cs.letterSpacing;
+            p2WebsiteHL.style.textTransform = cs.textTransform;
+            p2WebsiteHL.style.lineHeight = cs.lineHeight;
+            p2WebsiteHL.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+            p2WebsiteHL.textContent = txt;
+            const show = txt.trim().length > 0;
+            p2WebsiteHL.style.display = show ? 'inline' : 'none';
+            const px = sizeToText(p2WebsiteEl);
+            p2WebsiteEl.style.width = px + 'px';
+        }
+        if (p2WebsiteEl) {
+            p2WebsiteEl.addEventListener('input', syncWebsiteHighlight);
+            syncWebsiteHighlight();
+        }
+        // Delegated highlight sync for any cloned rows (Website or Account Manager)
+        document.addEventListener('input', (e) => {
+            const t = e.target;
+            if (!(t instanceof HTMLInputElement)) return;
+            if (!t.classList.contains('hl-input')) return;
+            const wrap = t.closest('.hl-wrap');
+            const bg = wrap ? wrap.querySelector('.hl-bg') : null;
+            if (!wrap || !bg) return;
+            // Mirror font metrics
+            const cs = getComputedStyle(t);
+            bg.style.font = cs.font;
+            bg.style.letterSpacing = cs.letterSpacing;
+            bg.style.textTransform = cs.textTransform;
+            bg.style.lineHeight = cs.lineHeight;
+            // Set text and visibility
+            bg.textContent = t.value || '';
+            bg.style.display = (t.value || '').trim() ? 'inline' : 'none';
+            // Resize input to text
+            if (!t.classList.contains('hl-fixed')) {
+                const px = sizeToText(t);
+                t.style.width = px + 'px';
+            }
+        });
+        // Highlight exactly what is typed for Account Manager using a mirrored background span
+        const p2AccountManagerEl = document.getElementById('p2AccountManager');
+        const p2AccountManagerHL = document.getElementById('p2AccountManagerHL');
+        const p2AccountManagerWrap = document.getElementById('p2AccountManagerWrap');
+        function sizeToText(inputEl) {
+            // Use a hidden mirror to measure text width precisely with matching metrics
+            const cs = getComputedStyle(inputEl);
+            const mirror = document.createElement('span');
+            mirror.style.position = 'absolute';
+            mirror.style.visibility = 'hidden';
+            mirror.style.whiteSpace = 'pre';
+            mirror.style.font = cs.font;
+            mirror.style.letterSpacing = cs.letterSpacing;
+            mirror.style.textTransform = cs.textTransform;
+            mirror.style.lineHeight = cs.lineHeight;
+            mirror.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+            mirror.textContent = inputEl.value || inputEl.placeholder || '';
+            document.body.appendChild(mirror);
+            const w = mirror.getBoundingClientRect().width;
+            document.body.removeChild(mirror);
+            return Math.max(1, Math.ceil(w));
+        }
+        function syncAccountMgrHighlight() {
+            if (!p2AccountManagerEl || !p2AccountManagerHL) return;
+            const txt = p2AccountManagerEl.value || '';
+            // Match HL font metrics to input
+            const cs = getComputedStyle(p2AccountManagerEl);
+            p2AccountManagerHL.style.font = cs.font;
+            p2AccountManagerHL.style.letterSpacing = cs.letterSpacing;
+            p2AccountManagerHL.style.textTransform = cs.textTransform;
+            p2AccountManagerHL.style.lineHeight = cs.lineHeight;
+            // No left padding so highlight starts right after the colon
+            p2AccountManagerHL.style.padding = '0';
+            p2AccountManagerHL.textContent = txt;
+            const show = txt.trim().length > 0;
+            p2AccountManagerHL.style.display = show ? 'inline' : 'none';
+            // Keep fixed width to prevent shifting
+        }
+        if (p2AccountManagerEl) {
+            p2AccountManagerEl.addEventListener('input', syncAccountMgrHighlight);
+            // initialize on load
+            syncAccountMgrHighlight();
+        }
+        syncP2();
+
+        // Simple pager for screen view
+        let activeIndex = 0; // 0-based over containerEls
+        function updateActive() {
+            containerEls.forEach((el, idx) => el.classList.toggle('active', idx === activeIndex));
+        }
+        updateActive();
+        nextBtn?.addEventListener('click', () => { activeIndex = (activeIndex + 1) % containerEls.length; updateActive(); });
+        prevBtn?.addEventListener('click', () => { activeIndex = (activeIndex - 1 + containerEls.length) % containerEls.length; updateActive(); });
+
+        // Page 2 dynamic row controls
+        const addRowBtn = document.getElementById('addRowBtn');
+        const deleteRowBtn = document.getElementById('deleteRowBtn');
+        const mainTable = document.getElementById('mainTable');
+        addRowBtn?.addEventListener('click', () => {
+            const tbody = mainTable?.querySelector('tbody');
+            if (!tbody) return;
+            const firstRow = tbody.querySelector('tr');
+            if (!firstRow) return;
+            const clone = firstRow.cloneNode(true);
+            // Clear values and remove duplicate IDs on inputs
+            clone.querySelectorAll('input').forEach(inp => {
+                inp.value = '';
+                if (inp.id) inp.removeAttribute('id');
+            });
+            // Also remove IDs from any highlight wrappers/spans to avoid duplicates
+            clone.querySelectorAll('#p2WebsiteWrap, #p2WebsiteHL').forEach(el => el.removeAttribute('id'));
+            // Also ensure cloned overlay class hooks exist even without IDs
+            clone.querySelectorAll('input').forEach(inp => {
+                if (inp.classList && inp.classList.contains('highlight')) {
+                    inp.classList.add('hl-input');
+                }
+            });
+            tbody.appendChild(clone);
+        });
+        deleteRowBtn?.addEventListener('click', () => {
+            const tbody = mainTable?.querySelector('tbody');
+            if (tbody && tbody.rows.length > 1) tbody.deleteRow(tbody.rows.length - 1);
+        });
+    </script>
+</body>
+
+</html>
